@@ -594,7 +594,7 @@
         }
 
         // Enviar formulário
-        document.getElementById('setupForm').addEventListener('submit', async function(e) {
+        document.getElementById('setupForm').addEventListener('submit', function(e) {
             e.preventDefault();
 
             const data = {
@@ -605,23 +605,23 @@
                 photos: savedPhotos
             };
 
-            // Salvar no storage persistente
+            // Salvar no localStorage (funciona em qualquer navegador)
             try {
-                await window.storage.set('declaration-data', JSON.stringify(data));
+                localStorage.setItem('declarationData', JSON.stringify(data));
                 loadDeclaration();
             } catch (error) {
                 console.error('Erro ao salvar:', error);
-                alert('Erro ao salvar. Tente novamente.');
+                alert('Erro ao salvar. Verifique se seu navegador permite armazenamento local.');
             }
         });
 
         // Carregar declaração
-        async function loadDeclaration() {
+        function loadDeclaration() {
             try {
-                const result = await window.storage.get('declaration-data');
+                const dataStr = localStorage.getItem('declarationData');
                 
-                if (result && result.value) {
-                    const data = JSON.parse(result.value);
+                if (dataStr) {
+                    const data = JSON.parse(dataStr);
                     
                     // Mostrar tela principal
                     document.getElementById('setupScreen').style.display = 'none';
@@ -659,7 +659,6 @@
                             }
                             
                             if (videoId) {
-                                // Criar iframe do YouTube
                                 const musicControl = document.getElementById('musicControl');
                                 musicControl.style.display = 'flex';
                                 musicControl.innerHTML = `
@@ -711,14 +710,12 @@
             const youtubePlayer = document.getElementById('youtubePlayer');
 
             if (youtubePlayer) {
-                // Controle do YouTube
                 if (musicPlaying) {
                     youtubePlayer.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
                 } else {
                     youtubePlayer.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
                 }
             } else {
-                // Controle de áudio normal
                 if (musicPlaying) {
                     audio.pause();
                 } else {
@@ -738,18 +735,14 @@
         }
 
         // Resetar declaração
-        async function resetDeclaration() {
+        function resetDeclaration() {
             if (confirm('Tem certeza que deseja refazer a declaração? Todos os dados atuais serão perdidos.')) {
-                try {
-                    await window.storage.delete('declaration-data');
-                    savedPhotos = [];
-                    document.getElementById('setupForm').reset();
-                    document.getElementById('photoPreviewGrid').innerHTML = '';
-                    document.getElementById('setupScreen').style.display = 'flex';
-                    document.getElementById('mainScreen').classList.remove('active');
-                } catch (error) {
-                    console.error('Erro ao resetar:', error);
-                }
+                localStorage.removeItem('declarationData');
+                savedPhotos = [];
+                document.getElementById('setupForm').reset();
+                document.getElementById('photoPreviewGrid').innerHTML = '';
+                document.getElementById('setupScreen').style.display = 'flex';
+                document.getElementById('mainScreen').classList.remove('active');
             }
         }
 
