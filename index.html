@@ -743,7 +743,7 @@
         }
 
         // Enviar formulário
-        document.getElementById('setupForm').addEventListener('submit', function(e) {
+        document.getElementById('setupForm').addEventListener('submit', async function(e) {
             e.preventDefault();
 
             const data = {
@@ -754,23 +754,44 @@
                 photos: savedPhotos
             };
 
-            // Salvar no localStorage (funciona em qualquer navegador)
+            // Salvar no storage compartilhado (visível para todos)
             try {
-                localStorage.setItem('declarationData', JSON.stringify(data));
+                await window.storage.set('declaration-data', JSON.stringify(data), true);
                 loadDeclaration();
             } catch (error) {
                 console.error('Erro ao salvar:', error);
-                alert('Erro ao salvar. Verifique se seu navegador permite armazenamento local.');
+                // Fallback para localStorage se window.storage não funcionar
+                localStorage.setItem('declarationData', JSON.stringify(data));
+                loadDeclaration();
             }
         });
 
         // Carregar declaração
-        function loadDeclaration() {
+        async function loadDeclaration() {
             try {
-                const dataStr = localStorage.getItem('declarationData');
+                // Tentar carregar do storage compartilhado primeiro
+                let data = null;
                 
-                if (dataStr) {
-                    const data = JSON.parse(dataStr);
+                if (window.storage) {
+                    try {
+                        const result = await window.storage.get('declaration-data', true);
+                        if (result && result.value) {
+                            data = JSON.parse(result.value);
+                        }
+                    } catch (storageError) {
+                        console.log('Storage compartilhado não disponível, usando localStorage');
+                    }
+                }
+                
+                // Fallback para localStorage
+                if (!data) {
+                    const dataStr = localStorage.getItem('declarationData');
+                    if (dataStr) {
+                        data = JSON.parse(dataStr);
+                    }
+                }
+                
+                if (data) {
                     
                     // Mostrar tela principal
                     document.getElementById('setupScreen').style.display = 'none';
@@ -932,9 +953,16 @@
         }
 
         // Resetar declaração
-        function resetDeclaration() {
+        async function resetDeclaration() {
             if (confirm('Tem certeza que deseja refazer a declaração? Todos os dados atuais serão perdidos.')) {
-                localStorage.removeItem('declarationData');
+                try {
+                    if (window.storage) {
+                        await window.storage.delete('declaration-data', true);
+                    }
+                    localStorage.removeItem('declarationData');
+                } catch (error) {
+                    console.error('Erro ao resetar:', error);
+                }
                 savedPhotos = [];
                 document.getElementById('setupForm').reset();
                 document.getElementById('photoPreviewGrid').innerHTML = '';
